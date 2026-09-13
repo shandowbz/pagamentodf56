@@ -1,7 +1,7 @@
 {
   "name": "pagamentodf56",
   "version": "1.0.0",
-  "description": "Pagamento Pix NowBanks",
+  "description": "Pagamento Pix NowBanks na Vercel",
   "main": "index.js",
   "dependencies": {
     "axios": "^1.6.0"
