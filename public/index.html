@@ -41,7 +41,8 @@
                 document.getElementById('qrcode-container').innerText = 'Gerando Pix...';
                 document.getElementById('copia-cola-texto').innerText = '';
 
-                const resposta = await fetch('/api/gerar-pix', {
+                // Mudado para a URL nativa do Netlify para evitar erros de redirecionamento 404
+                const resposta = await fetch('/.netlify/functions/pagar/gerar-pix', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: "Cliente da Loja", document: "00000000000", valor: 1000.00 })
@@ -50,11 +51,9 @@
                 const dados = await resposta.json();
 
                 if (dados.sucesso && dados.copia_e_cola) {
-                    // Exibe a imagem do QR Code e o código Pix Copia e Cola
                     document.getElementById('qrcode-container').innerHTML = `<img src="${dados.qrcode_imagem}" alt="QR Code Pix" width="180"/>`;
                     document.getElementById('copia-cola-texto').innerText = dados.copia_e_cola;
 
-                    // Se a sua API retornar o ID da transação, inicia o monitoramento
                     if (dados.transaction_id) {
                         monitorarStatus(dados.transaction_id);
                     }
@@ -70,10 +69,10 @@
         }
 
         function monitorarStatus(transactionId) {
-            // Verifica o status a cada 4 segundos
             intervaloVerificacao = setInterval(async () => {
                 try {
-                    const res = await fetch(`/api/status-transacao/${transactionId}`);
+                    // Mudado para a URL nativa do Netlify na rota de status
+                    const res = await fetch(`/.netlify/functions/pagar/status-transacao/${transactionId}`);
                     const resultado = await res.json();
 
                     document.getElementById('status-pagamento').innerText = resultado.status || "Verificando...";
