@@ -1,5 +1,4 @@
 const axios = require('axios');
-require('dotenv').config();
 
 const BASE_URL = 'https://api.nowbanks.com.br/v1';
 
@@ -16,10 +15,14 @@ exports.handler = async function(event, context) {
             const clientId = process.env.NOWBANKS_CLIENT_ID ? process.env.NOWBANKS_CLIENT_ID.trim() : '';
             const clientSecret = process.env.NOWBANKS_CLIENT_SECRET ? process.env.NOWBANKS_CLIENT_SECRET.trim() : '';
 
-            // 1. PASSO DE AUTENTICAÇÃO
+            console.log(`[NOWBANKS] Autenticando para o usuário: ${identificador}...`);
+
+            // 1. PASSO DE AUTENTICAÇÃO (Usando Axios compatível com o script funcional)
             const authResponse = await axios.post(`${BASE_URL}/auth/login`, {
                 client_id: clientId,
                 client_secret: clientSecret
+            }, {
+                headers: { 'Content-Type': 'application/json' }
             });
 
             const authData = authResponse.data;
@@ -33,9 +36,10 @@ exports.handler = async function(event, context) {
             }
 
             const accessToken = authData.access_token;
+            console.log("[NOWBANKS] Token obtido com sucesso! Gerando Pix...");
 
             // 2. PASSO DE DEPÓSITO
-            const response = await axios.post(`${BASE_URL}/payments/deposit`, {
+            const depositResponse = await axios.post(`${BASE_URL}/payments/deposit`, {
                 amount: parseFloat(valor),
                 external_id: `pedido-${identificador}-${Date.now()}`,
                 payer: { 
@@ -50,7 +54,9 @@ exports.handler = async function(event, context) {
                 }
             });
 
-            const depositData = response.data;
+            const depositData = depositResponse.data;
+
+            console.log("[NOWBANKS SUCESSO] Pix gerado!");
 
             return {
                 statusCode: 200,
@@ -64,7 +70,11 @@ exports.handler = async function(event, context) {
             console.error('Erro NowBanks:', error.response?.data || error.message);
             return {
                 statusCode: 500,
-                body: JSON.stringify({ sucesso: false, erro: 'Falha de comunicação com o gateway de pagamento.', details: error.response?.data || error.message })
+                body: JSON.stringify({ 
+                    sucesso: false, 
+                    erro: 'Falha de comunicação com o gateway de pagamento.', 
+                    details: error.response?.data || error.message 
+                })
             };
         }
     }
