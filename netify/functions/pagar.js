@@ -17,7 +17,7 @@ exports.handler = async function(event, context) {
 
             console.log(`[NOWBANKS] Autenticando para o usuário: ${identificador}...`);
 
-            // 1. PASSO DE AUTENTICAÇÃO (Usando Axios compatível com o script funcional)
+            // 1. PASSO DE AUTENTICAÇÃO
             const authResponse = await axios.post(`${BASE_URL}/auth/login`, {
                 client_id: clientId,
                 client_secret: clientSecret
@@ -62,6 +62,7 @@ exports.handler = async function(event, context) {
                 statusCode: 200,
                 body: JSON.stringify({
                     sucesso: true,
+                    transaction_id: depositData.transaction_id || depositData.id || depositData.external_id,
                     copia_e_cola: depositData.pix_copy_paste,
                     qrcode_imagem: depositData.pix_qr_code || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${depositData.pix_copy_paste}`
                 })
