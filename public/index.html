@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprar Refrigerador Electrolux DF56</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background: #f4f4f9; }
+        .card { background: #fff; padding: 30px; border-radius: 8px; display: inline-block; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
+        button { background: #28a745; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #218838; }
+        #modal-pix { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0px 0px 20px rgba(0,0,0,0.3); width: 320px; z-index: 1000; }
+        .copia-cola { font-size: 11px; word-break: break-all; background: #eee; padding: 8px; border-radius: 4px; max-height: 60px; overflow-y: auto; margin-top: 10px; }
+        .close-btn { background: #dc3545; margin-top: 15px; padding: 8px 15px; }
+        .close-btn:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Refrigerador Electrolux DF56</h2>
+        <p>Valor: <strong>R$ 1.000,00</strong></p>
+        <button onclick="iniciarPagamentoPix()">Pagar com Pix</button>
+    </div>
+
+    <!-- Modal Flutuante do QR Code -->
+    <div id="modal-pix">
+        <h3>Escaneie o QR Code</h3>
+        <div id="qrcode-container">Carregando QR Code...</div>
+        <p class="copia-cola" id="copia-cola-texto"></p>
+        <p>Status: <strong id="status-pagamento" style="color: #d9534f;">Aguardando pagamento...</strong></p>
+        <button class="close-btn" onclick="fecharModal()">Cancelar</button>
+    </div>
+
+    <script>
+        let intervaloVerificacao = null;
+
+        async function iniciarPagamentoPix() {
+            try {
+                document.getElementById('modal-pix').style.display = 'block';
+                document.getElementById('qrcode-container').innerText = 'Gerando Pix...';
+                document.getElementById('copia-cola-texto').innerText = '';
+
+                const resposta = await fetch('/api/gerar-pix', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: "Cliente da Loja", document: "00000000000" })
+                });
+
+                const dados = await resposta.json();
+
+                if (dados.transaction_id && dados.pix_qr_code) {
+                    // Exibe a imagem do QR Code base64 retornada pela NowHubPay
+                    document.getElementById('qrcode-container').innerHTML = `<img src="${dados.pix_qr_code}" alt="QR Code Pix" width="180"/>`;
+                    document.getElementById('copia-cola-texto').innerText = dados.pix_copy_paste;
+
+                    // Inicia o monitoramento automático do status
+                    monitorarStatus(dados.transaction_id);
+                } else {
+                    alert("Erro ao gerar o Pix: " + (dados.error || "Resposta inválida"));
+                    fecharModal();
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Erro de conexão com o servidor.");
+                fecharModal();
+            }
+        }
+
+        function monitorarStatus(transactionId) {
+            // Verifica o status a cada 4 segundos
+            intervaloVerificacao = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/status-transacao/${transactionId}`);
+                    const resultado = await res.json();
+
+                    document.getElementById('status-pagamento').innerText = resultado.status;
+
+                    if (resultado.status === 'COMPLETED') {
+                        clearInterval(intervaloVerificacao);
+                        document.getElementById('status-pagamento').style.color = '#28a745';
+                        alert("Pagamento aprovado com sucesso!");
+                        fecharModal();
+                    } else if (resultado.status === 'FAILED' || resultado.status === 'CANCELLED') {
+                        clearInterval(intervaloVerificacao);
+                        alert("O pagamento foi cancelado ou falhou.");
+                        fecharModal();
+                    }
+                } catch (e) {
+                    console.error("Erro ao verificar status", e);
+                }
+            }, 4000);
+        }
+
+        function fecharModal() {
+            clearInterval(intervaloVerificacao);
+            document.getElementById('modal-pix').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
