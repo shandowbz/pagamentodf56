@@ -1,6 +1,7 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
+    // Configura os cabeçalhos para aceitar requisições do frontend
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -27,28 +28,28 @@ module.exports = async (req, res) => {
             return res.status(400).json({ sucesso: false, erro: 'Identificador e valor são obrigatórios.' });
         }
 
-        console.log(`[NOWBANKS] Autenticando para o usuário: ${identificador}...`);
+        console.log(`[NOWHUBPAY] Autenticando em /v1/auth/login para o usuário: ${identificador}...`);
 
-        // 1. PASSO DE AUTENTICAÇÃO (Retornado para o domínio funcional original)
-        const authResponse = await axios.post('https://api.nowbanks.com.br/v1/auth/login', {
+        // 1. PASSO DE AUTENTICAÇÃO (URL oficial atualizada)
+        const authResponse = await axios.post('https://api.nowhubpay.com/v1/auth/login', {
             client_id: clientId,
             client_secret: clientSecret
         }, {
             headers: { 'Content-Type': 'application/json' },
-            timeout: 10000 // Timeout de segurança de 10 segundos
+            timeout: 10000
         });
 
         const authData = authResponse.data;
 
         if (authResponse.status !== 200 || !authData.access_token) {
-            console.error("[NOWBANKS AUTH ERROR]", authData);
-            return res.status(400).json({ sucesso: false, erro: authData.detail || 'Falha na autenticação com a NowBanks.' });
+            console.error("[NOWHUBPAY AUTH ERROR]", authData);
+            return res.status(400).json({ sucesso: false, erro: authData.detail || 'Falha na autenticação com o gateway.' });
         }
 
         const accessToken = authData.access_token;
-        console.log("[NOWBANKS] Token obtido com sucesso! Gerando Pix...");
+        console.log("[NOWHUBPAY] Token obtido com sucesso! Gerando Pix...");
 
-        // 2. PASSO DE DEPÓSITO
+        // 2. PASSO DE DEPÓSITO (URL oficial atualizada)
         const depositResponse = await axios.post('https://api.nowhubpay.com/v1/payments/deposit', {
             amount: parseFloat(valor),
             external_id: `pedido-${identificador}-${Date.now()}`,
@@ -65,7 +66,7 @@ module.exports = async (req, res) => {
         });
 
         const depositData = depositResponse.data;
-        console.log("[NOWBANKS SUCESSO] Pix gerado!");
+        console.log("[NOWHUBPAY SUCESSO] Pix gerado!");
 
         return res.status(200).json({
             sucesso: true,
