@@ -28,10 +28,10 @@ module.exports = async (req, res) => {
             return res.status(400).json({ sucesso: false, erro: 'Identificador e valor são obrigatórios.' });
         }
 
-        console.log(`[NOWBANKS] Autenticando em /v1/auth/login para o usuário: ${identificador}...`);
+        console.log(`[NOWHUBPAY] Autenticando em /v1/auth/login para o usuário: ${identificador}...`);
 
-        // 1. PASSO DE AUTENTICAÇÃO (Utilizando Axios compatível com Vercel Serverless)
-        const authResponse = await axios.post('https://api.nowbanks.com.br/v1/auth/login', {
+        // 1. PASSO DE AUTENTICAÇÃO (Atualizado para o domínio oficial nowhubpay)
+        const authResponse = await axios.post('https://api.nowhubpay.com/v1/auth/login', {
             client_id: clientId,
             client_secret: clientSecret
         }, {
@@ -40,23 +40,22 @@ module.exports = async (req, res) => {
 
         const authData = authResponse.data;
 
-        if (!authResponse.status === 200 || !authData.access_token) {
-            console.error("[NOWBANKS AUTH ERROR]", authData);
-            return res.status(400).json({ sucesso: false, erro: authData.detail || 'Falha na autenticação com a NowBanks.' });
+        if (authResponse.status !== 200 || !authData.access_token) {
+            console.error("[NOWHUBPAY AUTH ERROR]", authData);
+            return res.status(400).json({ sucesso: false, erro: authData.detail || 'Falha na autenticação com o gateway.' });
         }
 
         const accessToken = authData.access_token;
-        console.log("[NOWBANKS] Token obtido com sucesso! Gerando Pix...");
+        console.log("[NOWHUBPAY] Token obtido com sucesso! Gerando Pix...");
 
-        // 2. PASSO DE DEPÓSITO
-        const depositResponse = await axios.post('https://api.nowbanks.com.br/v1/payments/deposit', {
+        // 2. PASSO DE DEPÓSITO (Atualizado para o domínio oficial nowhubpay)
+        const depositResponse = await axios.post('https://api.nowhubpay.com/v1/payments/deposit', {
             amount: parseFloat(valor),
             external_id: `pedido-${identificador}-${Date.now()}`,
             payer: {
                 name: identificador,
                 document: "00000000000"
-            },
-            clientCallbackUrl: "https://seuseite.com/webhook"
+            }
         }, {
             headers: {
                 'Content-Type': 'application/json',
@@ -66,10 +65,11 @@ module.exports = async (req, res) => {
 
         const depositData = depositResponse.data;
 
-        console.log("[NOWBANKS SUCESSO] Pix gerado!");
+        console.log("[NOWHUBPAY SUCESSO] Pix gerado!");
 
         return res.status(200).json({
             sucesso: true,
+            transaction_id: depositData.transaction_id,
             copia_e_cola: depositData.pix_copy_paste,
             qrcode_imagem: depositData.pix_qr_code || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${depositData.pix_copy_paste}`
         });
@@ -78,7 +78,7 @@ module.exports = async (req, res) => {
         console.error("[ERRO CRITICO DEPOSITO]:", error.response?.data || error.message);
         return res.status(500).json({ 
             sucesso: false, 
-            erro: error.response?.data?.message || 'Falha de comunicação com o gateway de pagamento.' 
+            erro: error.response?.data?.detail || error.response?.data?.message || 'Falha de comunicação com o gateway de pagamento.' 
         });
     }
 };
