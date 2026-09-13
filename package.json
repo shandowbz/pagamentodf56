@@ -1,13 +1,12 @@
 {
-  "name": "backend-pagamento",
+  "name": "pagamentodf56",
   "version": "1.0.0",
-  "private": true,
-  "description": "Integracao NowHubPay Pix Serverless",
+  "description": "Pagamento Pix NowBanks",
   "main": "index.js",
   "dependencies": {
-    "axios": "^1.6.8"
+    "axios": "^1.6.0"
   },
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   }
 }
