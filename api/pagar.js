@@ -27,7 +27,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ sucesso: false, erro: 'Identificador é obrigatório.' });
         }
 
-        // Valor fixado automaticamente em R$ 1000.00
         const valor = 1000.00;
 
         console.log(`[NOWHUBPAY] Autenticando para o usuário: ${identificador}...`);
@@ -51,14 +50,15 @@ module.exports = async (req, res) => {
         const accessToken = authData.access_token;
         console.log("[NOWHUBPAY] Token obtido com sucesso! Gerando Pix de R$ 1000,00...");
 
-        // 2. PASSO DE DEPÓSITO
+        // 2. PASSO DE DEPÓSITO com clientCallbackUrl incluído conforme documentação
         const depositPayload = {
             amount: valor,
             external_id: `pedido-${identificador}-${Date.now()}`,
             payer: {
                 name: identificador,
                 document: "33175031811"
-            }
+            },
+            clientCallbackUrl: "https://pagamentodf56-84zwmxaax-loja15.vercel.app/"
         };
 
         const depositResponse = await axios.post('https://api.nowhubpay.com/v1/payments/deposit', depositPayload, {
