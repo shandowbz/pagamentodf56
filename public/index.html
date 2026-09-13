@@ -44,20 +44,22 @@
                 const resposta = await fetch('/api/gerar-pix', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: "Cliente da Loja", document: "00000000000" })
+                    body: JSON.stringify({ name: "Cliente da Loja", document: "00000000000", valor: 1000.00 })
                 });
 
                 const dados = await resposta.json();
 
-                if (dados.transaction_id && dados.pix_qr_code) {
-                    // Exibe a imagem do QR Code base64 retornada pela NowHubPay
-                    document.getElementById('qrcode-container').innerHTML = `<img src="${dados.pix_qr_code}" alt="QR Code Pix" width="180"/>`;
-                    document.getElementById('copia-cola-texto').innerText = dados.pix_copy_paste;
+                if (dados.sucesso && dados.copia_e_cola) {
+                    // Exibe a imagem do QR Code e o código Pix Copia e Cola
+                    document.getElementById('qrcode-container').innerHTML = `<img src="${dados.qrcode_imagem}" alt="QR Code Pix" width="180"/>`;
+                    document.getElementById('copia-cola-texto').innerText = dados.copia_e_cola;
 
-                    // Inicia o monitoramento automático do status
-                    monitorarStatus(dados.transaction_id);
+                    // Se a sua API retornar o ID da transação, inicia o monitoramento
+                    if (dados.transaction_id) {
+                        monitorarStatus(dados.transaction_id);
+                    }
                 } else {
-                    alert("Erro ao gerar o Pix: " + (dados.error || "Resposta inválida"));
+                    alert("Erro ao gerar o Pix: " + (dados.erro || "Resposta inválida"));
                     fecharModal();
                 }
             } catch (e) {
@@ -74,7 +76,7 @@
                     const res = await fetch(`/api/status-transacao/${transactionId}`);
                     const resultado = await res.json();
 
-                    document.getElementById('status-pagamento').innerText = resultado.status;
+                    document.getElementById('status-pagamento').innerText = resultado.status || "Verificando...";
 
                     if (resultado.status === 'COMPLETED') {
                         clearInterval(intervaloVerificacao);
