@@ -41,7 +41,7 @@
                 document.getElementById('qrcode-container').innerText = 'Gerando Pix...';
                 document.getElementById('copia-cola-texto').innerText = '';
 
-                // Mudado para a URL nativa do Netlify para evitar erros de redirecionamento 404
+                // Apontando para a função única do Netlify com o sufixo tratável
                 const resposta = await fetch('/.netlify/functions/pagar/gerar-pix', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -71,20 +71,21 @@
         function monitorarStatus(transactionId) {
             intervaloVerificacao = setInterval(async () => {
                 try {
-                    // Mudado para a URL nativa do Netlify na rota de status
+                    // Consultando o status passando o ID da transação na URL da função pagar
                     const res = await fetch(`/.netlify/functions/pagar/status-transacao/${transactionId}`);
                     const resultado = await res.json();
 
                     document.getElementById('status-pagamento').innerText = resultado.status || "Verificando...";
 
+                    // Tratativa conforme os status possíveis da NowBanks
                     if (resultado.status === 'COMPLETED') {
                         clearInterval(intervaloVerificacao);
                         document.getElementById('status-pagamento').style.color = '#28a745';
                         alert("Pagamento aprovado com sucesso!");
                         fecharModal();
-                    } else if (resultado.status === 'FAILED' || resultado.status === 'CANCELLED') {
+                    } else if (resultado.status === 'FAILED' || resultado.status === 'CANCELLED' || resultado.status === 'REJECTED') {
                         clearInterval(intervaloVerificacao);
-                        alert("O pagamento foi cancelado ou falhou.");
+                        alert("O pagamento foi cancelado, rejeitado ou falhou.");
                         fecharModal();
                     }
                 } catch (e) {
