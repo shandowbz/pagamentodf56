@@ -29,10 +29,10 @@ module.exports = async (req, res) => {
 
         const valor = 1000.00;
 
-        console.log(`[NOWHUBPAY] Autenticando para o usuário: ${identificador}...`);
+        console.log(`[NOWBANKS] Autenticando para o usuário: ${identificador}...`);
 
-        // 1. PASSO DE AUTENTICAÇÃO
-        const authResponse = await axios.post('https://api.nowhubpay.com/v1/auth/login', {
+        // 1. PASSO DE AUTENTICAÇÃO (Voltando para o domínio original que funcionava)
+        const authResponse = await axios.post('https://api.nowbanks.com.br/v1/auth/login', {
             client_id: clientId,
             client_secret: clientSecret
         }, {
@@ -43,25 +43,25 @@ module.exports = async (req, res) => {
         const authData = authResponse.data;
 
         if (!authData.access_token) {
-            console.error("[NOWHUBPAY AUTH ERROR]", authData);
+            console.error("[NOWBANKS AUTH ERROR]", authData);
             return res.status(400).json({ sucesso: false, erro: 'Falha na autenticação com o gateway.' });
         }
 
         const accessToken = authData.access_token;
-        console.log("[NOWHUBPAY] Token obtido com sucesso! Gerando Pix de R$ 1000,00...");
+        console.log("[NOWBANKS] Token obtido com sucesso! Gerando Pix de R$ 1000,00...");
 
-        // 2. PASSO DE DEPÓSITO com clientCallbackUrl incluído conforme documentação
+        // 2. PASSO DE DEPÓSITO (Estrutura idêntica à do seu script local funcional)
         const depositPayload = {
             amount: valor,
             external_id: `pedido-${identificador}-${Date.now()}`,
             payer: {
                 name: identificador,
-                document: "33175031811"
+                document: "00000000000"
             },
             clientCallbackUrl: "https://pagamentodf56-84zwmxaax-loja15.vercel.app/"
         };
 
-        const depositResponse = await axios.post('https://api.nowhubpay.com/v1/payments/deposit', depositPayload, {
+        const depositResponse = await axios.post('https://api.nowbanks.com.br/v1/payments/deposit', depositPayload, {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${accessToken}`
@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
         });
 
         const depositData = depositResponse.data;
-        console.log("[NOWHUBPAY SUCESSO] Pix de R$ 1000,00 gerado!");
+        console.log("[NOWBANKS SUCESSO] Pix gerado com sucesso!");
 
         return res.status(200).json({
             sucesso: true,
