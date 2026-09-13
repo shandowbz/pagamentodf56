@@ -1,7 +1,6 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
-    // Configura os cabeçalhos para aceitar requisições do frontend
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -22,15 +21,18 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { valor, identificador } = req.body;
+        const { identificador } = req.body;
 
-        if (!valor || !identificador) {
-            return res.status(400).json({ sucesso: false, erro: 'Identificador e valor são obrigatórios.' });
+        if (!identificador) {
+            return res.status(400).json({ sucesso: false, erro: 'Identificador é obrigatório.' });
         }
 
-        console.log(`[NOWHUBPAY] Autenticando em /v1/auth/login para o usuário: ${identificador}...`);
+        // Valor fixado automaticamente em R$ 1000.00
+        const valor = 1000.00;
 
-        // 1. PASSO DE AUTENTICAÇÃO (URL oficial atualizada)
+        console.log(`[NOWHUBPAY] Autenticando para o usuário: ${identificador}...`);
+
+        // 1. PASSO DE AUTENTICAÇÃO
         const authResponse = await axios.post('https://api.nowhubpay.com/v1/auth/login', {
             client_id: clientId,
             client_secret: clientSecret
@@ -41,23 +43,25 @@ module.exports = async (req, res) => {
 
         const authData = authResponse.data;
 
-        if (authResponse.status !== 200 || !authData.access_token) {
+        if (!authData.access_token) {
             console.error("[NOWHUBPAY AUTH ERROR]", authData);
-            return res.status(400).json({ sucesso: false, erro: authData.detail || 'Falha na autenticação com o gateway.' });
+            return res.status(400).json({ sucesso: false, erro: 'Falha na autenticação com o gateway.' });
         }
 
         const accessToken = authData.access_token;
-        console.log("[NOWHUBPAY] Token obtido com sucesso! Gerando Pix...");
+        console.log("[NOWHUBPAY] Token obtido com sucesso! Gerando Pix de R$ 1000,00...");
 
-        // 2. PASSO DE DEPÓSITO (URL oficial atualizada)
-        const depositResponse = await axios.post('https://api.nowhubpay.com/v1/payments/deposit', {
-            amount: parseFloat(valor),
+        // 2. PASSO DE DEPÓSITO
+        const depositPayload = {
+            amount: valor,
             external_id: `pedido-${identificador}-${Date.now()}`,
             payer: {
                 name: identificador,
-                document: "00000000000"
+                document: "33175031811"
             }
-        }, {
+        };
+
+        const depositResponse = await axios.post('https://api.nowhubpay.com/v1/payments/deposit', depositPayload, {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${accessToken}`
@@ -66,7 +70,7 @@ module.exports = async (req, res) => {
         });
 
         const depositData = depositResponse.data;
-        console.log("[NOWHUBPAY SUCESSO] Pix gerado!");
+        console.log("[NOWHUBPAY SUCESSO] Pix de R$ 1000,00 gerado!");
 
         return res.status(200).json({
             sucesso: true,
