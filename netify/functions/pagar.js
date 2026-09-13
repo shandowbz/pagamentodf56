@@ -1,7 +1,6 @@
 const axios = require('axios');
 require('dotenv').config();
 
-const CLIENT_SECRET = process.env.NOWBANKS_CLIENT_SECRET || 'sec_8315a4cb31571ad2e79a00551ab4b7a733374e5b6a2c279b';
 const BASE_URL = 'https://api.nowbanks.com.br/v1';
 
 exports.handler = async function(event, context) {
@@ -25,7 +24,7 @@ exports.handler = async function(event, context) {
 
             const authData = authResponse.data;
 
-            if (!authResponse.status === 200 || !authData.access_token) {
+            if (authResponse.status !== 200 || !authData.access_token) {
                 console.error("[NOWBANKS AUTH ERROR]", authData);
                 return {
                     statusCode: 400,
