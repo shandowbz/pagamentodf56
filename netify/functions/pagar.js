@@ -3,10 +3,10 @@ const axios = require('axios');
 const BASE_URL = 'https://api.nowbanks.com.br/v1';
 
 exports.handler = async function(event, context) {
-    const path = event.path;
+    const path = event.path || '';
     
-    // Rota para Gerar o Pix (POST /api/gerar-pix)
-    if (event.httpMethod === 'POST' && path.includes('gerar-pix')) {
+    // Rota para Gerar o Pix (POST)
+    if (event.httpMethod === 'POST' && (path.endsWith('gerar-pix') || path === '/pagar' || path.endsWith('/pagar'))) {
         try {
             const bodyData = event.body ? JSON.parse(event.body) : {};
             const identificador = bodyData.identificador || bodyData.name || "Cliente Teste";
@@ -80,7 +80,7 @@ exports.handler = async function(event, context) {
         }
     }
 
-    // Rota para Consultar o Status da Transação (GET /api/status-transacao/txn_xxx)
+    // Rota para Consultar o Status da Transação (GET)
     if (event.httpMethod === 'GET' && path.includes('status-transacao')) {
         const transactionId = path.split('/').pop();
         try {
@@ -113,5 +113,5 @@ exports.handler = async function(event, context) {
         }
     }
 
-    return { statusCode: 404, body: 'Rota não encontrada' };
+    return { statusCode: 404, body: JSON.stringify({ erro: 'Rota não encontrada', pathRecebido: path }) };
 };
