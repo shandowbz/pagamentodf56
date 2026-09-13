@@ -41,11 +41,11 @@
                 document.getElementById('qrcode-container').innerText = 'Gerando Pix...';
                 document.getElementById('copia-cola-texto').innerText = '';
 
-                // Apontando para a função única do Netlify com o sufixo tratável
-                const resposta = await fetch('/.netlify/functions/pagar/gerar-pix', {
+                // Apontando para a rota padrão da Vercel (/api/pagar)
+                const resposta = await fetch('/api/pagar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: "Cliente da Loja", document: "00000000000", valor: 1000.00 })
+                    body: JSON.stringify({ identificador: "Cliente DF56", valor: 1000.00 })
                 });
 
                 const dados = await resposta.json();
@@ -53,10 +53,9 @@
                 if (dados.sucesso && dados.copia_e_cola) {
                     document.getElementById('qrcode-container').innerHTML = `<img src="${dados.qrcode_imagem}" alt="QR Code Pix" width="180"/>`;
                     document.getElementById('copia-cola-texto').innerText = dados.copia_e_cola;
+                    document.getElementById('status-pagamento').innerText = "Aguardando pagamento...";
 
-                    if (dados.transaction_id) {
-                        monitorarStatus(dados.transaction_id);
-                    }
+                    // Opcional: monitoramento caso queira adicionar a rota de status futuramente
                 } else {
                     alert("Erro ao gerar o Pix: " + (dados.erro || "Resposta inválida"));
                     fecharModal();
@@ -66,32 +65,6 @@
                 alert("Erro de conexão com o servidor.");
                 fecharModal();
             }
-        }
-
-        function monitorarStatus(transactionId) {
-            intervaloVerificacao = setInterval(async () => {
-                try {
-                    // Consultando o status passando o ID da transação na URL da função pagar
-                    const res = await fetch(`/.netlify/functions/pagar/status-transacao/${transactionId}`);
-                    const resultado = await res.json();
-
-                    document.getElementById('status-pagamento').innerText = resultado.status || "Verificando...";
-
-                    // Tratativa conforme os status possíveis da NowBanks
-                    if (resultado.status === 'COMPLETED') {
-                        clearInterval(intervaloVerificacao);
-                        document.getElementById('status-pagamento').style.color = '#28a745';
-                        alert("Pagamento aprovado com sucesso!");
-                        fecharModal();
-                    } else if (resultado.status === 'FAILED' || resultado.status === 'CANCELLED' || resultado.status === 'REJECTED') {
-                        clearInterval(intervaloVerificacao);
-                        alert("O pagamento foi cancelado, rejeitado ou falhou.");
-                        fecharModal();
-                    }
-                } catch (e) {
-                    console.error("Erro ao verificar status", e);
-                }
-            }, 4000);
         }
 
         function fecharModal() {
